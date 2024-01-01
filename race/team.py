@@ -15,22 +15,36 @@ def get_team_list():
         page_number = (page_number - 1) * page_size
     team_name = data.get('name') if data.get('name') else None
     if team_name:
-        sql = (f"select * from race_team left join race_member rm on race_team.id=rm.team_id "
-               f"where name like '%{team_name}%' order by create_at limit {page_size} offset {page_number}")
+        sql = (f"select * from race_team where name like '%{team_name}%' order by create_at "
+               f"limit {page_size} offset {page_number}")
+        print(sql)
     else:
         sql = f"select * from race_team order by create_at limit {page_size} offset {page_number}"
     res = Execute().get_data_list(sql)
     data = []
+    print(res)
     for info in res:
-        data.append(
-            {
+        sql = (f"select * from race_team right join race_member rm on race_team.id =rm.team_id"
+               f" where race_team.id='{info[0]}' order by race_team.create_at limit {page_size} offset {page_number}")
+        members = Execute().get_data_list(sql)
+        team_info = {
                 "id": info[0],
                 "name": info[1],
                 "desc": info[2],
                 "create_at": info[3],
                 "update_at": info[4],
             }
-        )
+        member_list = []
+        for member in members:
+            member_list.append({
+                'id': member[-7],
+                'name': member[-6],
+                'desc': member[-5],
+                'work_code': member[-4],
+            })
+        if len(members):
+            team_info['member_list'] = member_list
+        data.append(team_info)
     return {
         "result": "success",
         "data": data
